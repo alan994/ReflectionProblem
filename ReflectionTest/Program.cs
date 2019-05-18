@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,14 +11,16 @@ namespace ReflectionTest
 		{
 			var request = new MyRequest();
 			IMediator mediator = new Mediator();
-
-			//This works (of course), but I need to call this by reflection. I don't know the type at design time.
-			//var r = mediator.Send(request);
-
-			//I tried this, but it doesn't work
+						
 			var type = request.GetType();
 			var method = mediator.GetType().GetMethod("Send");
-			var generic = method.MakeGenericMethod(type);
+
+			var responseType = type.GetInterfaces()
+				.Single(i => i.GetGenericTypeDefinition() == typeof(IRequest<>))
+				.GetGenericArguments()
+				.Single();
+
+			var generic = method.MakeGenericMethod(responseType);
 			//Exception
 			var response = generic.Invoke(mediator, new object[] { request });
 
